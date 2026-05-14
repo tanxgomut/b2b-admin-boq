@@ -38,18 +38,3 @@ EXPOSE 3000
 ENV PORT 3000
 
 CMD ["node", "server.js"]
-
-FROM node:18-alpine AS base
-
-# เปลี่ยนจาก Corepack มาเป็นการติดตั้ง pnpm ผ่าน npm โดยตรง
-RUN npm install -g pnpm@9.0.0 
-
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-
-# Copy ไฟล์ package
-COPY package.json pnpm-lock.yaml* ./
-
-# ติดตั้ง dependencies
-RUN pnpm install --frozen-lockfile
