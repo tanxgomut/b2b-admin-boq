@@ -10,21 +10,21 @@ WORKDIR /app
 # Copy ไฟล์ package
 COPY package.json pnpm-lock.yaml* ./
 
-# --- วิธีใหม่: ใช้ ENV เพื่อปลดล็อกการ Build ของ Prisma/Sharp ---
-ENV PNPM_ONLY_ALLOW_BUILDS=true
-RUN pnpm install --frozen-lockfile
+# --- วิธีแก้ pnpm 10: บังคับอนุญาต build scripts ของทุก package ---
+RUN pnpm install --frozen-lockfile --allow-builds
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# ตั้งค่า ENV สำหรับการ Build
+# ปิด Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# ถ้าใช้ Prisma ต้องรัน generate เสมอ
+# สร้าง Prisma Client
 RUN npx prisma generate 
 
+# สั่ง Build Next.js
 RUN pnpm run build
 
 FROM base AS runner
