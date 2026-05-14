@@ -1,7 +1,11 @@
+// proxy.ts
 import NextAuth from "next-auth"
 import { authConfig } from "@/auth.config"
 
-export const { auth: proxy } = NextAuth(authConfig)
+const { auth } = NextAuth(authConfig)
+
+// ต้องมี default export เป็น function
+export default auth;
 
 export const config = {
     matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
