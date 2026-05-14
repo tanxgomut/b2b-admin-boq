@@ -1,8 +1,8 @@
-# เปลี่ยนจาก 18 เป็น 20
-FROM node:20-alpine AS base
+# 1. ขยับมาใช้ Node 22 (LTS) เพื่อรองรับ pnpm รุ่นล่าสุด
+FROM node:22-alpine AS base
 
-# ติดตั้ง pnpm
-RUN npm install -g pnpm@latest 
+# ติดตั้ง pnpm รุ่นล่าสุด
+RUN npm install -g pnpm@latest
 
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
@@ -19,12 +19,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# ปิดการส่งข้อมูล telemetry และ Build
+# ปิด Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# ถ้ามีการใช้ Prisma ต้องรัน generate ก่อน build เสมอ
+# สร้าง Prisma Client ให้ตรงกับ Alpine Linux
 RUN npx prisma generate 
 
+# สั่ง Build Next.js
 RUN pnpm run build
 
 FROM base AS runner
@@ -36,6 +37,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# ดึงไฟล์จาก stage builder มาเฉพาะที่จำเป็น
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
