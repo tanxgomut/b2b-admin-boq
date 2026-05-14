@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy ไฟล์ package
 COPY package.json pnpm-lock.yaml* ./
 
-# --- จุดสำคัญ: สั่ง pnpm ให้รัน build scripts โดยไม่ต้องถาม ---
-RUN pnpm config set only-allow-builds true
+# --- วิธีใหม่: ใช้ ENV เพื่อปลดล็อกการ Build ของ Prisma/Sharp ---
+ENV PNPM_ONLY_ALLOW_BUILDS=true
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
@@ -22,7 +22,7 @@ COPY . .
 # ตั้งค่า ENV สำหรับการ Build
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# รัน Prisma Generate (ตอนนี้มันจะยอมให้รันแล้ว)
+# ถ้าใช้ Prisma ต้องรัน generate เสมอ
 RUN npx prisma generate 
 
 RUN pnpm run build
