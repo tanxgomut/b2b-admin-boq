@@ -1,4 +1,4 @@
-name: Docker CI Check
+name: CI Check
 
 on:
   push:
@@ -7,12 +7,18 @@ on:
     branches: [ "main" ]
 
 jobs:
-  test-build:
+  build-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build Docker image
+      - uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          
+      - name: Build Docker image (Check for errors)
         run: |
-          docker build -t nextjs-app-test .
+          docker build \
+          --build-arg DATABASE_URL="postgresql://placeholder@localhost:5432/db" \
+          -t my-app-test .
