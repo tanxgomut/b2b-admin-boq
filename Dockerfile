@@ -1,18 +1,13 @@
 FROM node:18-alpine AS base
 
-# ติดตั้ง pnpm ทั่วโลกใน container
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN npm install -g pnpm@9.0.0 
 
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy เฉพาะไฟล์ที่ใช้ลงทะเบียน package
 COPY package.json pnpm-lock.yaml* ./
 
-# ติดตั้ง dependencies (ใช้ --frozen-lockfile เพื่อความแม่นยำ)
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
@@ -43,3 +38,18 @@ EXPOSE 3000
 ENV PORT 3000
 
 CMD ["node", "server.js"]
+
+FROM node:18-alpine AS base
+
+# เปลี่ยนจาก Corepack มาเป็นการติดตั้ง pnpm ผ่าน npm โดยตรง
+RUN npm install -g pnpm@9.0.0 
+
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Copy ไฟล์ package
+COPY package.json pnpm-lock.yaml* ./
+
+# ติดตั้ง dependencies
+RUN pnpm install --frozen-lockfile
