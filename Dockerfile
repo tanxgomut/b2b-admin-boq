@@ -22,7 +22,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # สร้าง Prisma Client
-RUN npx prisma generate 
+RUN DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" npx prisma generate
 
 # สั่ง Build Next.js
 RUN pnpm run build
