@@ -1,0 +1,22 @@
+name: Docker CI/CD
+
+on:
+  push:
+    branches: [ "main" ] # รันเมื่อ push เข้า branch main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            -t b2b-admin .
+            
+      - name: Run Tests (Optional)
+        run: docker run b2b-admin npm test # ถ้าคุณมีไฟล์ test
