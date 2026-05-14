@@ -1,7 +1,6 @@
-# 1. ขยับมาใช้ Node 22 (LTS) เพื่อรองรับ pnpm รุ่นล่าสุด
 FROM node:22-alpine AS base
 
-# ติดตั้ง pnpm รุ่นล่าสุด
+# ติดตั้ง pnpm
 RUN npm install -g pnpm@latest
 
 FROM base AS deps
@@ -11,7 +10,8 @@ WORKDIR /app
 # Copy ไฟล์ package
 COPY package.json pnpm-lock.yaml* ./
 
-# ติดตั้ง dependencies
+# --- จุดสำคัญ: สั่ง pnpm ให้รัน build scripts โดยไม่ต้องถาม ---
+RUN pnpm config set only-allow-builds true
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
@@ -19,13 +19,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# ปิด Next.js telemetry
+# ตั้งค่า ENV สำหรับการ Build
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# สร้าง Prisma Client ให้ตรงกับ Alpine Linux
+# รัน Prisma Generate (ตอนนี้มันจะยอมให้รันแล้ว)
 RUN npx prisma generate 
 
-# สั่ง Build Next.js
 RUN pnpm run build
 
 FROM base AS runner
@@ -37,7 +36,6 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# ดึงไฟล์จาก stage builder มาเฉพาะที่จำเป็น
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
