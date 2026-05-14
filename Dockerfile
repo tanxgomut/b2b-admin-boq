@@ -1,23 +1,29 @@
 FROM node:18-alpine AS base
 
-# 1. Install dependencies
+# ติดตั้ง pnpm ทั่วโลกใน container
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
 
-# 2. Rebuild the source code
+# Copy เฉพาะไฟล์ที่ใช้ลงทะเบียน package
+COPY package.json pnpm-lock.yaml* ./
+
+# ติดตั้ง dependencies (ใช้ --frozen-lockfile เพื่อความแม่นยำ)
+RUN pnpm install --frozen-lockfile
+
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# ตั้งค่า Build-time env สำหรับ Next.js (ถ้ามีส่วนที่ต้องใช้ตอน build)
+# ปิดการส่งข้อมูล telemetry ของ Next.js และสั่ง Build
 ENV NEXT_TELEMETRY_DISABLED 1
-RUN npm run build
+RUN pnpm run build
 
-# 3. Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
@@ -27,6 +33,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy ไฟล์ที่จำเป็นจาก stage builder (ใช้ standalone mode เพื่อลดขนาด)
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
